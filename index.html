@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Weekly Forex Analysis </title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { --bg:#0f172a; --card:#111827; --muted:#64748b; --text:#e5e7eb; --accent:#38bdf8; --border:#273244;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+  h1{font-size:24px;margin:0 0 12px}
+  h2{font-size:18px;margin:24px 0 8px;color:#e2e8f0}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin:12px 0;break-inside:avoid}
+  .grid{display:grid;gap:12px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  label{display:block;font-weight:600;color:#cbd5e1;margin:0 0 4px}
+  input,select,textarea{width:100%;background:#0b1220;border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px}
+  textarea{min-height:90px;resize:vertical}
+  table{width:100%;border-collapse:collapse}
+  th,td{border:1px solid var(--border);padding:8px;text-align:left}
+  th{background:#0b1220;color:#cbd5e1}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{background:#0b1220;border:1px solid var(--border);color:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#001018}
+  .muted{color:var(--muted)}
+  .right{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  .small{font-size:12px}
+  .no-print{ }            /* utility */
+  .print-only{display:none}
+
+  /* ====== NEW: Print Styles ====== */
+  @media print {
+    @page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+    body{ background:#fff; color:#000; }
+    .wrap{ max-width:none; margin:0; padding:0; }
+    .no-print, .btn, input[type="file"]{ display:none !important; }
+    .print-only{ display:block !important; }
+    .card{ background:#fff; border:0.3pt solid #dcdcdc; border-radius:8px; padding:12px; margin:10px 0; }
+    h1{ font-size:20px; margin-bottom:6px; color:#000; }
+    h2{ font-size:14px; color:#000; margin:12px 0 6px; }
+    label{ color:#000; }
+    input, select, textarea{
+      background:transparent !important;
+      border:0 !important;
+      padding:0 !important;
+      color:#000 !important;
+      box-shadow:none !important;
+      outline:none !important;
+    }
+    table{ border-color:#dcdcdc; }
+    th{ background:#f4f4f4; color:#000; }
+    td, th{ border-color:#dcdcdc; }
+    /* Page breaks where useful */
+    .pb-before{ break-before:page; }
+    .pb-avoid{ break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- ====== NEW: Print Header (visible only in PDF/print) ====== -->
+  <div id="printHeader" class="print-only" style="border-bottom:1px solid #dcdcdc; padding-bottom:8px; margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:#000">Weekly Forex Analysis</div>
+        <div id="ph-dates" style="font-size:12px;color:#444"></div>
+      </div>
+      <div id="ph-meta" style="font-size:12px;color:#444;text-align:right"></div>
+    </div>
+  </div>
+
+  <h1 class="no-print">Weekly Forex Analysis – Local Form</h1>
+  <div class="row no-print">
+    <button class="btn" id="saveLocal">💾 Save (Local)</button>
+    <button class="btn" id="clearLocal">🧹 Clear (Local)</button>
+    <button class="btn" id="exportJson">⬇️ Export JSON</button>
+    <button class="btn" id="exportCsv">⬇️ Export CSV</button>
+    <label class="btn">
+      ⬆️ Import JSON
+      <input type="file" id="importJson" accept="application/json" style="display:none">
+    </label>
+    <!-- ====== NEW: Print Button ====== -->
+    <button class="btn primary" id="printPdf">🖨️ Print / Save as PDF</button>
+  </div>
+  <p class="muted small no-print">Data autosaves to your browser (localStorage). Use Export/Import to move between devices or keep versioned files.</p>
+
+  <!-- Header / Basics -->
+  <div class="card grid g3 pb-avoid">
+    <div>
+      <label>Start Date</label>
+      <input type="date" id="startDate">
+    </div>
+    <div>
+      <label>End Date</label>
+      <input type="date" id="endDate">
+    </div>
+    <div>
+      <label>Email</label>
+      <input type="email" id="email">
+    </div>
+  </div>
+
+  <!-- Market Sentiment & Risk Conditions -->
+  <div class="card pb-avoid">
+    <h2>Market Sentiment & Risk Conditions</h2>
+    <div class="grid g3">
+      <div>
+        <label>NAS100 Seasonal</label>
+        <select id="nasSeasonal">
+          <option value="">—</option><option>Bullish</option><option>Bearish</option><option>Neutral</option>
+          <option>Bullish Continuation</option><option>Bearish Continuation</option>
+        </select>
+      </div>
+      <div>
+        <label>VIX Level</label>
+        <input id="vixLevel" type="number" step="0.01" placeholder="e.g., 15.18">
+      </div>
+      <div>
+        <label>VIX Interpretation</label>
+        <select id="vixInterp">
+          <option value="">—</option><option>Risk On</option><option>Risk Off</option><option>Mixed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Currency Seasonal Bias (Indexes) -->
+  <div class="card pb-avoid">
+    <h2>Currency Seasonal Bias (Indexes)</h2>
+    <table id="currencyIndexTable">
+      <thead>
+        <tr><th>Currency</th><th>Bias</th><th>Importance</th></tr>
+      </thead>
+      <tbody>
+        <script>
+          const _currRows = ["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD"];
+          document.currentScript.insertAdjacentHTML('afterend',
+            _currRows.map(c=>`<tr>
+              <td>${c}</td>
+              <td>
+                <select data-key="bias">
+                  <option value="">—</option><option>Bullish</option><option>Bearish</option><option>Neutral</option>
+                </select>
+              </td>
+              <td>
+                <select data-key="importance">
+                  <option value="">—</option><option>Imp</option><option>High</option><option>Med</option><option>Low</option>
+                </select>
+              </td>
+            </tr>`).join("")
+          );
+        </script>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Currency Pair Seasonals -->
+  <div class="card">
+    <h2>Currency Pair Seasonals</h2>
+    <div class="right no-print"><button class="btn" id="addPairSeasonal">+ Add Row</button></div>
+    <table id="pairSeasonals">
+      <thead><tr><th>Pair</th><th>Bias</th><th>Reason</th><th class="no-print"></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Key Economic Events -->
+  <div class="card">
+    <h2>Key Economic Events</h2>
+    <div class="right no-print"><button class="btn" id="addEvent">+ Add Event</button></div>
+    <table id="eventsTable">
+      <thead><tr><th>Day</th><th>Currency</th><th>Event</th><th>Time (optional)</th><th class="no-print"></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- COT Extreme Positions -->
+  <div class="card">
+    <h2>COT Extreme Positions</h2>
+    <div class="right no-print"><button class="btn" id="addCot">+ Add Row</button></div>
+    <table id="cotTable">
+      <thead><tr><th>Currency</th><th>Extreme Position</th><th>Note</th><th class="no-print"></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Weekly Sentiment -->
+  <div class="card">
+    <h2>Weekly Sentiment</h2>
+    <div class="grid g2 pb-avoid">
+      <div>
+        <label>Date Label</label>
+        <input id="wkDateLabel" placeholder="e.g., 11 Aug 2025">
+      </div>
+      <div>
+        <label>Strength Scale (optional)</label>
+        <input id="wkScale" placeholder="e.g., Strong Buy/Sell scale">
+      </div>
+    </div>
+    <div class="right no-print"><button class="btn" id="addSentiment">+ Add Row</button></div>
+    <table id="sentimentTable">
+      <thead>
+        <tr>
+          <th>Currency</th><th>Signal</th><th>Current/Previous</th><th class="no-print"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <script>
+          const _sentSeeds = ["USD","CAD","AUD","NZD","EUR","CHF","GBP","JPY"];
+          document.currentScript.insertAdjacentHTML('afterend',
+            _sentSeeds.map(c=>`<tr>
+              <td>${c}</td>
+              <td><input placeholder="e.g., Strong Buy"></td>
+              <td><input placeholder="e.g., 4 / 5"></td>
+              <td class="no-print"></td>
+            </tr>`).join("")
+          );
+        </script>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Final Watchlist -->
+  <div class="card">
+    <h2>Final Watchlist</h2>
+    <div class="right no-print"><button class="btn" id="addWatch">+ Add Pair</button></div>
+    <table id="watchTable">
+      <thead><tr><th>Pair</th><th>Bias</th><th>Rationale</th><th class="no-print"></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Notes -->
+  <div class="card pb-avoid">
+    <h2>Notes & Commentary</h2>
+    <textarea id="notes" placeholder="Add macro alignment, confidence score, technical setups, etc."></textarea>
+  </div>
+
+  <div class="row right no-print">
+    <button class="btn primary" id="saveLocalBottom">💾 Save (Local)</button>
+    <span class="muted small" id="status"></span>
+  </div>
+</div>
+
+<script>
+/* ========= Helpers ========= */
+const $ = sel => document.querySelector(sel);
+const byId = id => document.getElementById(id);
+const setStatus = (msg) => { $('#status').textContent = msg; setTimeout(()=>$('#status').textContent='',2500); };
+
+/* ========= Dynamic tables + data handlers (unchanged from your version) ========= */
+function addRow(tbody, cells, removeCol=true){
+  const tr = document.createElement('tr');
+  cells.forEach(c=>{
+    const td = document.createElement('td');
+    if(typeof c === 'string'){ td.innerHTML = c; } else { td.appendChild(c); }
+    tr.appendChild(td);
+  });
+  if(removeCol){
+    const td = document.createElement('td'); td.className='no-print';
+    const b = document.createElement('button'); b.className='btn'; b.textContent='—'; b.title='Remove';
+    b.onclick = ()=> tr.remove();
+    td.appendChild(b); tr.appendChild(td);
+  }
+  tbody.appendChild(tr);
+}
+
+// Pair Seasonals
+byId('addPairSeasonal').onclick = ()=>{
+  const tb = byId('pairSeasonals').querySelector('tbody');
+  const pair = document.createElement('input'); pair.placeholder='e.g., EURUSD';
+  const bias = document.createElement('select'); bias.innerHTML = `<option>—</option><option>Bullish</option><option>Bearish</option><option>Neutral</option>`;
+  const reason = document.createElement('input'); reason.placeholder='Reason';
+  addRow(tb,[pair,bias,reason]);
+};
+
+// Events
+const dayOpts = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+byId('addEvent').onclick = ()=>{
+  const tb = byId('eventsTable').querySelector('tbody');
+  const day = document.createElement('select'); day.innerHTML = '<option value="">—</option>'+dayOpts.map(d=>`<option>${d}</option>`).join('');
+  const ccy = document.createElement('input'); ccy.placeholder='USD/AUD/...';
+  const event = document.createElement('input'); event.placeholder='Event title';
+  const time = document.createElement('input'); time.placeholder='HH:MM (opt)';
+  addRow(tb,[day,ccy,event,time]);
+};
+
+// COT
+byId('addCot').onclick = ()=>{
+  const tb = byId('cotTable').querySelector('tbody');
+  const ccy = document.createElement('input'); ccy.placeholder='Currency';
+  const extreme = document.createElement('select'); extreme.innerHTML = '<option value="">—</option><option>Top</option><option>Near Top</option><option>Bottom</option><option>All Top</option><option>All Bottom</option>';
+  const note = document.createElement('input'); note.placeholder='Note';
+  addRow(tb,[ccy,extreme,note]);
+};
+
+// Watchlist
+byId('addWatch').onclick = ()=>{
+  const tb = byId('watchTable').querySelector('tbody');
+  const pair = document.createElement('input'); pair.placeholder='Pair';
+  const bias = document.createElement('select'); bias.innerHTML = '<option value="">—</option><option>Buy</option><option>Sell</option><option>Neutral</option>';
+  const rat = document.createElement('input'); rat.placeholder='Rationale';
+  addRow(tb,[pair,bias,rat]);
+};
+
+/* ========= Serialize / Deserialize (same as before) ========= */
+function collect(){
+  const data = {
+    startDate: byId('startDate').value,
+    endDate: byId('endDate').value,
+    email: byId('email').value,
+    market: {
+      nasSeasonal: byId('nasSeasonal').value,
+      vixLevel: byId('vixLevel').value,
+      vixInterp: byId('vixInterp').value,
+    },
+    currencyIndex: [],
+    pairSeasonals: [],
+    events: [],
+    cot: [],
+    weekly: {
+      dateLabel: byId('wkDateLabel').value,
+      scale: byId('wkScale').value,
+      rows: []
+    },
+    watchlist: [],
+    notes: byId('notes').value,
+    _updatedAt: new Date().toISOString()
+  };
+
+  const tbodyCI = byId('currencyIndexTable').querySelector('tbody');
+  [...tbodyCI.rows].forEach(r=>{
+    data.currencyIndex.push({
+      currency: r.cells[0].textContent.trim(),
+      bias: r.cells[1].querySelector('select').value,
+      importance: r.cells[2].querySelector('select').value
+    });
+  });
+
+  const tbPS = byId('pairSeasonals').querySelector('tbody');
+  [...tbPS.rows].forEach(r=>{
+    data.pairSeasonals.push({
+      pair: r.cells[0].querySelector('input,select')?.value || '',
+      bias: r.cells[1].querySelector('select')?.value || '',
+      reason: r.cells[2].querySelector('input,textarea')?.value || ''
+    });
+  });
+
+  const tbEV = byId('eventsTable').querySelector('tbody');
+  [...tbEV.rows].forEach(r=>{
+    data.events.push({
+      day: r.cells[0].querySelector('select')?.value || '',
+      currency: r.cells[1].querySelector('input')?.value || '',
+      event: r.cells[2].querySelector('input')?.value || '',
+      time: r.cells[3].querySelector('input')?.value || ''
+    });
+  });
+
+  const tbCOT = byId('cotTable').querySelector('tbody');
+  [...tbCOT.rows].forEach(r=>{
+    data.cot.push({
+      currency: r.cells[0].querySelector('input')?.value || '',
+      extreme: r.cells[1].querySelector('select')?.value || '',
+      note: r.cells[2].querySelector('input')?.value || ''
+    });
+  });
+
+  const tbWS = byId('sentimentTable').querySelector('tbody');
+  [...tbWS.rows].forEach(r=>{
+    data.weekly.rows.push({
+      currency: r.cells[0].textContent.trim() || r.cells[0].querySelector('input')?.value || '',
+      signal: r.cells[1].querySelector('input,select')?.value || '',
+      currentPrev: r.cells[2].querySelector('input')?.value || ''
+    });
+  });
+
+  const tbW = byId('watchTable').querySelector('tbody');
+  [...tbW.rows].forEach(r=>{
+    data.watchlist.push({
+      pair: r.cells[0].querySelector('input')?.value || '',
+      bias: r.cells[1].querySelector('select')?.value || '',
+      rationale: r.cells[2].querySelector('input,textarea')?.value || ''
+    });
+  });
+
+  return data;
+}
+
+function populate(data){
+  byId('startDate').value = data.startDate || '';
+  byId('endDate').value = data.endDate || '';
+  byId('email').value = data.email || '';
+  byId('nasSeasonal').value = data.market?.nasSeasonal || '';
+  byId('vixLevel').value = data.market?.vixLevel || '';
+  byId('vixInterp').value = data.market?.vixInterp || '';
+
+  const tbodyCI = byId('currencyIndexTable').querySelector('tbody');
+  [...tbodyCI.rows].forEach((r,i)=>{
+    const row = data.currencyIndex?.[i];
+    if(!row) return;
+    r.cells[1].querySelector('select').value = row.bias || '';
+    r.cells[2].querySelector('select').value = row.importance || '';
+  });
+
+  const clearT = id => byId(id).querySelector('tbody').innerHTML='';
+  clearT('pairSeasonals'); clearT('eventsTable'); clearT('cotTable'); clearT('watchTable');
+
+  (data.pairSeasonals||[]).forEach(ps=>{
+    const tb = byId('pairSeasonals').querySelector('tbody');
+    const pair = document.createElement('input'); pair.value = ps.pair||'';
+    const bias = document.createElement('select'); bias.innerHTML = '<option>—</option><option>Bullish</option><option>Bearish</option><option>Neutral</option>'; bias.value = ps.bias||'';
+    const reason = document.createElement('input'); reason.value = ps.reason||'';
+    addRow(tb,[pair,bias,reason]);
+  });
+
+  (data.events||[]).forEach(ev=>{
+    const tb = byId('eventsTable').querySelector('tbody');
+    const day = document.createElement('select'); day.innerHTML = '<option value="">—</option>'+['Monday','Tuesday','Wednesday','Thursday','Friday'].map(d=>`<option ${ev.day===d?'selected':''}>${d}</option>`).join('');
+    const ccy = document.createElement('input'); ccy.value = ev.currency||'';
+    const event = document.createElement('input'); event.value = ev.event||'';
+    const time = document.createElement('input'); time.value = ev.time||'';
+    addRow(tb,[day,ccy,event,time]);
+  });
+
+  (data.cot||[]).forEach(c=>{
+    const tb = byId('cotTable').querySelector('tbody');
+    const cc = document.createElement('input'); cc.value = c.currency||'';
+    const ex = document.createElement('select'); ex.innerHTML = '<option value="">—</option><option>Top</option><option>Near Top</option><option>Bottom</option><option>All Top</option><option>All Bottom</option>'; ex.value = c.extreme||'';
+    const note = document.createElement('input'); note.value = c.note||'';
+    addRow(tb,[cc,ex,note]);
+  });
+
+  (data.watchlist||[]).forEach(w=>{
+    const tb = byId('watchTable').querySelector('tbody');
+    const pair = document.createElement('input'); pair.value = w.pair||'';
+    const bias = document.createElement('select'); bias.innerHTML = '<option value="">—</option><option>Buy</option><option>Sell</option><option>Neutral</option>'; bias.value = w.bias||'';
+    const rat = document.createElement('input'); rat.value = w.rationale||'';
+    addRow(tb,[pair,bias,rat]);
+  });
+
+  byId('wkDateLabel').value = data.weekly?.dateLabel || '';
+  byId('wkScale').value = data.weekly?.scale || '';
+  const tbWS = byId('sentimentTable').querySelector('tbody');
+  const rows = data.weekly?.rows || [];
+  if(rows.length){
+    tbWS.innerHTML='';
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.currency||''}</td>
+        <td><input value="${r.signal||''}"></td>
+        <td><input value="${r.currentPrev||''}"></td>
+        <td class="no-print"></td>`;
+      tbWS.appendChild(tr);
+    });
+  }
+
+  byId('notes').value = data.notes || '';
+}
+
+/* ========= Local Storage ========= */
+const KEY = 'fx_weekly_form_v1';
+function saveLocal(){ const d=collect(); localStorage.setItem(KEY, JSON.stringify(d)); setStatus('Saved locally ✅'); }
+function loadLocal(){ const raw=localStorage.getItem(KEY); if(!raw) return; try{ populate(JSON.parse(raw)); setStatus('Loaded local data'); }catch(e){} }
+function clearLocal(){ localStorage.removeItem(KEY); setStatus('Cleared local data'); }
+
+/* ========= Export / Import ========= */
+function download(filename, text, type='application/json'){
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+function exportJson(){
+  const data = collect();
+  download(`fx_weekly_${(data.startDate||'').replaceAll('-','')||'data'}.json`, JSON.stringify(data,null,2));
+}
+function exportCsv(){
+  const d = collect();
+  const rows = [];
+  rows.push(['startDate','endDate','email','nasSeasonal','vixLevel','vixInterp','dateLabel','scale','notes'].join(','));
+  rows.push([
+    d.startDate,d.endDate,d.email,
+    d.market.nasSeasonal,d.market.vixLevel,d.market.vixInterp,
+    d.weekly.dateLabel,d.weekly.scale,
+    JSON.stringify(d.notes).replaceAll(',',';')
+  ].map(v=>`"${(v??'').toString().replaceAll('"','""')}"`).join(','));
+
+  rows.push('\n[CURRENCY_INDEX]');
+  rows.push('currency,bias,importance');
+  d.currencyIndex.forEach(r=>rows.push([r.currency,r.bias,r.importance].map(v=>`"${(v??'').replaceAll('"','""')}"`).join(',')));
+
+  rows.push('\n[PAIR_SEASONALS]');
+  rows.push('pair,bias,reason');
+  d.pairSeasonals.forEach(r=>rows.push([r.pair,r.bias,r.reason].map(v=>`"${(v??'').replaceAll('"','""')}"`).join(',')));
+
+  rows.push('\n[EVENTS]');
+  rows.push('day,currency,event,time');
+  d.events.forEach(r=>rows.push([r.day,r.currency,r.event,r.time].map(v=>`"${(v??'').replaceAll('"','""')}"`).join(',')));
+
+  rows.push('\n[COT]');
+  rows.push('currency,extreme,note');
+  d.cot.forEach(r=>rows.push([r.currency,r.extreme,r.note].map(v=>`"${(v??'').replaceAll('"','""')}"`).join(',')));
+
+  rows.push('\n[WEEKLY_SENTIMENT]');
+  rows.push('currency,signal,currentPrev');
+  d.weekly.rows.forEach(r=>rows.push([r.currency,r.signal,r.currentPrev].map(v=>`"${(v??'').replaceAll('"','""')}"`).join(',')));
+
+  rows.push('\n[WATCHLIST]');
+  rows.push('pair,bias,rationale');
+  d.watchlist.forEach(r=>rows.push([r.pair,r.bias,r.rationale].map(v=>`"${(v??'').replaceAll('"','""')}"`).join(',')));
+
+  download(`fx_weekly_${(d.startDate||'').replaceAll('-','')||'data'}.csv`, rows.join('\n'), 'text/csv');
+}
+
+/* ========= NEW: Print handling ========= */
+function formatDateRange(s,e){
+  if(!s && !e) return 'Date range: N/A';
+  if(s && e) return `Date range: ${s} → ${e}`;
+  return `Date: ${s || e}`;
+}
+function updatePrintHeader(){
+  const d = collect();
+  const dates = formatDateRange(d.startDate, d.endDate);
+  const meta = [
+    d.email ? `Email: ${d.email}` : null,
+    `Generated: ${new Date().toLocaleString()}`
+  ].filter(Boolean).join(' | ');
+
+  const phDates = document.getElementById('ph-dates');
+  const phMeta  = document.getElementById('ph-meta');
+  phDates.textContent = dates;
+  phMeta.textContent  = meta;
+}
+function printNow(){
+  updatePrintHeader();
+  window.print();
+}
+
+byId('printPdf').onclick = printNow;
+
+/* ========= Wire up ========= */
+byId('saveLocal').onclick = saveLocal;
+byId('saveLocalBottom').onclick = saveLocal;
+byId('clearLocal').onclick = ()=>{ if(confirm('Clear locally saved data?')) clearLocal(); };
+byId('exportJson').onclick = exportJson;
+byId('exportCsv').onclick = exportCsv;
+byId('importJson').onchange = (e)=>{
+  const file = e.target.files?.[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ()=>{ try{ populate(JSON.parse(r.result)); setStatus('Imported JSON ✅'); }catch{ alert('Invalid JSON'); } };
+  r.readAsText(file);
+};
+
+window.addEventListener('load', ()=>{
+  loadLocal();
+  ['addPairSeasonal','addEvent','addCot','addWatch'].forEach(id=>{ const el=byId(id); if(el) el.click(); });
+});
+</script>
+</body>
+</html>
