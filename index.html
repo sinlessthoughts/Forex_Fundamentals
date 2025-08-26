@@ -584,19 +584,19 @@ window.addEventListener('load', ()=>{
   loadLocal();
   ['addPairSeasonal','addEvent','addCot','addWatch'].forEach(id=>{ const el=byId(id); if(el) el.click(); });
 });
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app-check.js";
+
+  const app = initializeApp(firebaseConfig);
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LcJbLMrAAAAAM6cQDFlMoDcghgkL35QSgZu-2oY'),
+    isTokenAutoRefreshEnabled: true
+  });
 </script>
 
-<!-- 1) Firebase SDK LOADER (module) -->
-<script type="module">
-  // paste your real config here
-  const firebaseConfig = { apiKey:"...", authDomain:""fx-weekly.firebaseapp.com", projectId:"fx-weekly", appId:"1:199621645889:web:17f8b94b7318a5773398c0" };
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, collection, query, where, orderBy, getDocs, serverTimestamp, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-  window._fb = { initializeApp, getAuth, onAuthStateChanged, signInAnonymously, signOut,
-                 getFirestore, doc, setDoc, getDoc, collection, query, where, orderBy, getDocs,
-                 serverTimestamp, addDoc, updateDoc, firebaseConfig };
-</script>
+
 
 <!-- 2) YOUR ORIGINAL BIG SCRIPT (classic) -->
 <script>
