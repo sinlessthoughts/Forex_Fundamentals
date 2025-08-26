@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -85,6 +86,31 @@
     <button class="btn primary" id="printPdf">🖨️ Print / Save as PDF</button>
   </div>
   <p class="muted small no-print">Data autosaves to your browser (localStorage). Use Export/Import to move between devices or keep versioned files.</p>
+
+<!-- ===== Cloud / History Panel ===== -->
+<div class="card">
+  <div class="row" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <h2 style="margin:0">History</h2>
+    <div class="row no-print">
+      <button class="btn" id="authBtn">🔐 Sign in</button>
+      <button class="btn" id="saveCloud">☁️ Save to Cloud</button>
+      <button class="btn" id="sharePublic" title="Create a public, read-only link">🔗 Make Public Link</button>
+    </div>
+  </div>
+
+  <div class="grid g2 pb-avoid">
+    <div>
+      <label>Local Snapshots (this device)</label>
+      <div id="localHistory" class="small muted">No local snapshots yet.</div>
+    </div>
+    <div>
+      <label>Cloud Snapshots (your account)</label>
+      <div id="cloudHistory" class="small muted">Sign in to view cloud snapshots.</div>
+    </div>
+  </div>
+</div>
+
+
 
   <!-- Header / Basics -->
   <div class="card grid g3 pb-avoid">
@@ -559,5 +585,112 @@ window.addEventListener('load', ()=>{
   ['addPairSeasonal','addEvent','addCot','addWatch'].forEach(id=>{ const el=byId(id); if(el) el.click(); });
 });
 </script>
+
+<!-- 1) Firebase SDK LOADER (module) -->
+<script type="module">
+  // paste your real config here
+  const firebaseConfig = { apiKey:"AIzaSyC2yCmDGUh-Jluw9KDxriBPTOUJx8by0Mo", authDomain:""fx-weekly.firebaseapp.com", projectId:"fx-weekly", appId:"1:199621645889:web:17f8b94b7318a5773398c0" };
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, query, where, orderBy, getDocs, serverTimestamp, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  window._fb = { initializeApp, getAuth, onAuthStateChanged, signInAnonymously, signOut,
+                 getFirestore, doc, setDoc, getDoc, collection, query, where, orderBy, getDocs,
+                 serverTimestamp, addDoc, updateDoc, firebaseConfig };
+</script>
+
+<!-- 2) YOUR ORIGINAL BIG SCRIPT (classic) -->
+<script>
+  // ... your existing helpers, collect(), populate(), etc.
+</script>
+
+<!-- 3) ROBUST INIT WRAPPER (classic) — the patch above -->
+<script>
+  // (the patch block)
+</script>
+
+<script>
+/* -------- Robust Firebase init wrapper -------- */
+(function(){
+  const authBtn = document.getElementById('authBtn');
+  const cloudHistoryEl = document.getElementById('cloudHistory');
+  if (!authBtn) return;
+
+  // visual "loading" state until SDK is ready
+  const setLoading = (msg='Loading Firebase…')=>{
+    authBtn.disabled = true;
+    authBtn.textContent = msg;
+  };
+  const setReady = ()=>{ authBtn.disabled = false; authBtn.textContent = '🔐 Sign in'; };
+
+  setLoading();
+
+  // wait for window._fb injected by the <script type="module"> block
+  function waitForFirebase(timeoutMs=10000){
+    return new Promise((resolve, reject)=>{
+      const start = Date.now();
+      const t = setInterval(()=>{
+        if (window._fb) { clearInterval(t); resolve(window._fb); }
+        else if (Date.now() - start > timeoutMs) { clearInterval(t); reject(new Error('Firebase SDK not loaded')); }
+      }, 150);
+    });
+  }
+
+  waitForFirebase().then(_fb=>{
+    setReady();
+    // pull helpers from your existing script
+    const byId = (id)=>document.getElementById(id);
+    const setStatus = (msg)=>{ const el=document.getElementById('status'); if(el){ el.textContent=msg; setTimeout(()=>el.textContent='',2500);} };
+
+    const {
+      initializeApp, getAuth, onAuthStateChanged, signInAnonymously, signOut,
+      getFirestore, doc, setDoc, getDoc, collection, query, where, orderBy, getDocs,
+      serverTimestamp, addDoc, updateDoc, firebaseConfig
+    } = _fb;
+
+    // init Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // UI handlers
+    function updateAuthUI(user){
+      if(user){
+        authBtn.textContent = '🚪 Sign out';
+        cloudHistoryEl.textContent = 'Loading…';
+        // minimal “loaded” message; your full renderCloudHistory can be called here
+      }else{
+        authBtn.textContent = '🔐 Sign in';
+        if (cloudHistoryEl) cloudHistoryEl.textContent = 'Sign in to view cloud snapshots.';
+      }
+    }
+
+    authBtn.onclick = async ()=>{
+      try{
+        if(auth.currentUser){ await signOut(auth); setStatus('Signed out'); }
+        else { await signInAnonymously(auth); setStatus('Signed in (anonymous)'); }
+      }catch(e){
+        console.error(e);
+        alert('Auth error: ' + (e?.message || e));
+      }
+    };
+
+    onAuthStateChanged(auth, updateAuthUI);
+
+    // OPTIONAL: expose for your other code if needed
+    window.__fbAuth = auth;
+    window.__fbDb = db;
+  }).catch(err=>{
+    console.error(err);
+    authBtn.textContent = 'Firebase failed to load';
+    authBtn.disabled = true;
+    if (cloudHistoryEl) cloudHistoryEl.textContent = 'Firebase SDK not loaded.';
+  });
+})();
+</script>
+
+
+
+
+
 </body>
 </html>
