@@ -72,7 +72,7 @@
     </div>
   </div>
 
-  <h1 class="no-print">Weekly Forex Analysis </h1>
+  <h1 class="no-print">Weekly Forex Analysis – Local Form</h1>
   <div class="row no-print">
     <button class="btn" id="saveLocal">💾 Save (Local)</button>
     <button class="btn" id="clearLocal">🧹 Clear (Local)</button>
@@ -585,16 +585,35 @@ window.addEventListener('load', ()=>{
   ['addPairSeasonal','addEvent','addCot','addWatch'].forEach(id=>{ const el=byId(id); if(el) el.click(); });
 });
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app-check.js";
 
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyC2yCmDGUh-Jluw9KDxriBPTOUJx8by0Mo",
+    authDomain: "fx-weekly.firebaseapp.com",
+    projectId: "fx-weekly",
+    storageBucket: "fx-weekly.firebasestorage.app",
+    messagingSenderId: "199621645889",
+    appId: "1:199621645889:web:17f8b94b7318a5773398c0",
+    measurementId: "G-0HWJR42BSF"
+  };
+
+  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LcJbLMrAAAAAM6cQDFlMoDcghgkL35QSgZu-2oY'),
-    isTokenAutoRefreshEnabled: true
-  });
+  const analytics = getAnalytics(app);
 </script>
+
+
+
+
+
 
 
 
@@ -687,5 +706,10 @@ window.addEventListener('load', ()=>{
   });
 })();
 </script>
+
+
+
+
+
 </body>
 </html>
